@@ -22,7 +22,7 @@ class Docente extends Model
         return $this->belongsToMany(Grupo::class, 'grupo_docente');
     }
 
-    public function estudiantesConsejero(): HasMany
+    public function estudiantes(): HasMany
     {
         return $this->hasMany(Estudiante::class, 'consejero_id');
     }
