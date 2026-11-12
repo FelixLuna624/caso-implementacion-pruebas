@@ -148,3 +148,64 @@ test('CP-13 un estudiante no se matricula dos veces en el mismo grupo', function
         ->where('estudiante_id', $estudiante->id)
         ->count())->toBe(1);
 });
+
+test('C3 puedeAbrirse es verdadero con docente y exactamente 15 estudiantes', function () {
+    $this->grupo->asignarDocente($this->ana);
+    $estudiantes = Estudiante::factory()->count(15)->create(['consejero_id' => $this->ana->id]);
+    $this->grupo->estudiantes()->attach($estudiantes->modelKeys());
+
+    expect($this->grupo->puedeAbrirse())->toBeTrue();
+});
+
+test('C3 puedeAbrirse es falso con docente y 14 estudiantes', function () {
+    $this->grupo->asignarDocente($this->ana);
+    $estudiantes = Estudiante::factory()->count(14)->create(['consejero_id' => $this->ana->id]);
+    $this->grupo->estudiantes()->attach($estudiantes->modelKeys());
+
+    expect($this->grupo->puedeAbrirse())->toBeFalse();
+});
+
+test('C3 puedeAbrirse es verdadero con docente y 16 estudiantes', function () {
+    $this->grupo->asignarDocente($this->ana);
+    $estudiantes = Estudiante::factory()->count(16)->create(['consejero_id' => $this->ana->id]);
+    $this->grupo->estudiantes()->attach($estudiantes->modelKeys());
+
+    expect($this->grupo->puedeAbrirse())->toBeTrue();
+});
+
+test('C3 acepta notas válidas en los extremos y cerca de ellos', function (float $nota) {
+    $estudiante = Estudiante::factory()->create(['consejero_id' => $this->ana->id]);
+    $this->grupo->estudiantes()->attach($estudiante->id);
+
+    $this->grupo->registrarNota($estudiante, $nota);
+
+    expect(EstudianteMatriculado::query()
+        ->where('grupo_id', $this->grupo->id)
+        ->where('estudiante_id', $estudiante->id)
+        ->first()
+        ->nota)->toBe($nota);
+})->with([0.0, 0.5, 9.5, 10.0]);
+
+test('C3 asigna dos docentes, no repite uno y rechaza un tercero', function () {
+    $this->grupo->asignarDocente($this->ana);
+    $this->grupo->asignarDocente($this->ana);
+
+    expect($this->grupo->docentes()->count())->toBe(1);
+
+    $this->grupo->asignarDocente($this->luis);
+
+    expect($this->grupo->docentes()->count())->toBe(2);
+    expect(fn () => $this->grupo->asignarDocente($this->carla))
+        ->toThrow(DomainException::class);
+    expect($this->grupo->fresh()->docentes)->toHaveCount(2);
+});
+
+test('C3 abre un grupo válido y guarda abierto en verdadero', function () {
+    $this->grupo->asignarDocente($this->ana);
+    $estudiantes = Estudiante::factory()->count(15)->create(['consejero_id' => $this->ana->id]);
+    $this->grupo->estudiantes()->attach($estudiantes->modelKeys());
+
+    $this->grupo->abrir();
+
+    expect($this->grupo->fresh()->abierto)->toBeTrue();
+});
