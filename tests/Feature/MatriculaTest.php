@@ -7,6 +7,8 @@ use App\Models\EstudianteMatriculado;
 use App\Models\Grupo;
 use Illuminate\Database\QueryException;
 
+mutates(Grupo::class);
+
 beforeEach(function () {
     $this->curso = Curso::factory()->create([
         'sigla' => 'IF6100',
